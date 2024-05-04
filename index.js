@@ -16,7 +16,6 @@ const GarageDoorAccessory = require('./lib/GarageDoorAccessory');
 const SimpleDimmerAccessory = require('./lib/SimpleDimmerAccessory');
 const SimpleDimmer2Accessory = require('./lib/SimpleDimmer2Accessory');
 const SimpleBlindsAccessory = require('./lib/SimpleBlindsAccessory');
-const SimpleBlinds2Accessory = require('./lib/SimpleBlinds2Accessory');
 const SimpleHeaterAccessory = require('./lib/SimpleHeaterAccessory');
 const SimpleFanAccessory = require('./lib/SimpleFanAccessory');
 const SimpleFanLightAccessory = require('./lib/SimpleFanLightAccessory');
@@ -24,7 +23,7 @@ const SwitchAccessory = require('./lib/SwitchAccessory');
 const ValveAccessory = require('./lib/ValveAccessory');
 const OilDiffuserAccessory = require('./lib/OilDiffuserAccessory');
 
-const PLUGIN_NAME = 'homebridge-tuya-lan';
+const PLUGIN_NAME = 'homebridge-tuya';
 const PLATFORM_NAME = 'TuyaLan';
 
 const CLASS_DEF = {
@@ -41,9 +40,8 @@ const CLASS_DEF = {
     convector: ConvectorAccessory,
     garagedoor: GarageDoorAccessory,
     simpledimmer: SimpleDimmerAccessory,
-    simpledimmer2: SimpleDimmer2Accessory,    
+    simpledimmer2: SimpleDimmer2Accessory,
     simpleblinds: SimpleBlindsAccessory,
-    simpleblinds2: SimpleBlinds2Accessory,
     simpleheater: SimpleHeaterAccessory,
     switch: SwitchAccessory,
     fan: SimpleFanAccessory,
@@ -95,9 +93,6 @@ class TuyaLan {
                 device.ip = ('' + (device.ip || '')).trim();
             } catch(ex) {}
 
-            //if (!/^[0-9a-f]+$/i.test(device.id)) return this.log.error('%s, id for %s, is not a valid id.', device.id, device.name || 'unnamed device');
-            if (!/^[0-9a-f]+$/i.test(device.key)) return this.log.error('%s, key for %s (%s), is not a valid key.', device.key.replace(/.{4}$/, '****'), device.name || 'unnamed device', device.id);
-            if (!{16:1, 24:1, 32: 1}[device.key.length]) return this.log.error('%s, key for %s (%s), doesn\'t have the expected length.', device.key.replace(/.{4}$/, '****'), device.name || 'unnamed device', device.id);
             if (!device.type) return this.log.error('%s (%s) doesn\'t have a type defined.', device.name || 'Unnamed device', device.id);
             if (!CLASS_DEF[device.type.toLowerCase()]) return this.log.error('%s (%s) doesn\'t have a valid type defined.', device.name || 'Unnamed device', device.id);
 
@@ -110,7 +105,7 @@ class TuyaLan {
 
         this.log.info('Starting discovery...');
 
-        TuyaDiscovery.start({ids: deviceIds})
+        TuyaDiscovery.start({ids: deviceIds, log: this.log})
             .on('discover', config => {
                 if (!config || !config.id) return;
                 if (!devices[config.id]) return this.log.warn('Discovered a device that has not been configured yet (%s@%s).', config.id, config.ip);
@@ -121,6 +116,7 @@ class TuyaLan {
 
                 const device = new TuyaAccessory({
                     ...devices[config.id], ...config,
+                    log: this.log,
                     UUID: UUID.generate(PLUGIN_NAME + ':' + config.id),
                     connect: false
                 });
@@ -131,6 +127,7 @@ class TuyaLan {
             this.log.info('Adding fake device: %s', config.name);
             this.addAccessory(new TuyaAccessory({
                 ...config,
+                log: this.log,
                 UUID: UUID.generate(PLUGIN_NAME + ':fake:' + config.id),
                 connect: false
             }));
@@ -146,6 +143,7 @@ class TuyaLan {
 
                     const device = new TuyaAccessory({
                         ...devices[deviceId],
+                        log: this.log,
                         UUID: UUID.generate(PLUGIN_NAME + ':' + deviceId),
                         connect: false
                     });
